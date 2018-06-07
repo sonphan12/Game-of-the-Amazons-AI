@@ -47,6 +47,9 @@ class Player:
         # The place is already having something on
         if state[to_x][to_y] != '.' or state[shot_x][shot_y] != '.':
             return False
+        # Trying to shoot 'to' position
+        if to_x == shot_x and to_y == shot_y:
+            return False
         # Invalid rule
         if abs(to_x - from_x) != abs(to_y - from_y) and to_x != from_x and to_y != from_y:
             return False
