@@ -1,4 +1,5 @@
 import random
+import copy
 
 
 # ======================== Class Player =======================================
@@ -17,12 +18,17 @@ class Player:
     # (row2, col2): new position of selected amazon
     # (row3, col3): position of the square is shot
     def nextMove(self, state):
-        result = [(0, 3), (5, 3), (8, 6)]  # example move in wikipedia
-        result = [(random.randint(0, 9), random.randint(0, 9)), (random.randint(0, 9), random.randint(0, 9)),
-                  (random.randint(0, 9), random.randint(0, 9))]
-        while not self.isValidMove(result, state):
-            result = [(random.randint(0, 9), random.randint(0, 9)), (random.randint(0, 9), random.randint(0, 9)),
-                      (random.randint(0, 9), random.randint(0, 9))]
+        # result = [(0, 3), (5, 3), (8, 6)]  # example move in wikipedia
+        # result = [(random.randint(0, 9), random.randint(0, 9)), (random.randint(0, 9), random.randint(0, 9)),
+        #           (random.randint(0, 9), random.randint(0, 9))]
+        # while not self.isValidMove(result, state):
+        #     result = [(random.randint(0, 9), random.randint(0, 9)), (random.randint(0, 9), random.randint(0, 9)),
+        #               (random.randint(0, 9), random.randint(0, 9))]
+        result = None
+        validMoves = self.getAllValidMove(state)
+        if len(validMoves) != 0:
+            result = validMoves[random.randint(0, len(validMoves) - 1)]
+            # result = validMoves[0]
         return result
 
     def board_copy(self, board):
@@ -32,31 +38,52 @@ class Player:
         return new_board
 
     def isValidMove(self, move, state):
+        return self.isValidPlaceQueen([move[0], move[1]], state) and self.isValidShooting(move, state)
+
+    def isValidPlaceQueen(self, move, state):
         from_x = move[0][0]
         from_y = move[0][1]
         to_x = move[1][0]
         to_y = move[1][1]
-        shot_x = move[2][0]
-        shot_y = move[2][1]
         # Out of bound
-        if to_x < 0 or to_x > 10 or to_y < 0 or to_y > 10 or shot_x < 0 or shot_x > 10 or shot_y < 0 or shot_x > 10:
+        if to_x < 0 or to_x > 10 or to_y < 0 or to_y > 10:
             return False
         # The 'from' has invalid object
         if state[from_x][from_y] != self.str:
             return False
         # The place is already having something on
-        if state[to_x][to_y] != '.' or state[shot_x][shot_y] != '.':
-            return False
-        # Trying to shoot 'to' position
-        if to_x == shot_x and to_y == shot_y:
+        if state[to_x][to_y] != '.':
             return False
         # Invalid rule
         if abs(to_x - from_x) != abs(to_y - from_y) and to_x != from_x and to_y != from_y:
             return False
-        if abs(shot_x - to_x) != abs(shot_y - to_y) and shot_x != to_x and shot_y != to_y:
+        # Check block
+        if self.isBlockedPlaceQueen(move, state):
+            return False
+        return True
+
+    def isValidShooting(self, move, state):
+        shoot_from_x = move[1][0]
+        shoot_from_y = move[1][1]
+        shoot_to_x = move[2][0]
+        shoot_to_y = move[2][1]
+        last_from_x = move[0][0]
+        last_from_y = move[0][1]
+        # Out of bound
+        if shoot_from_x < 0 or shoot_from_x > 10 or shoot_from_y < 0 or shoot_from_y > 10\
+                or shoot_to_x < 0 or shoot_to_x > 10 or shoot_to_y < 0 or shoot_to_y > 10:
+            return False
+        # The place is already having something on
+        if state[shoot_to_x][shoot_to_y] != '.' and (shoot_to_x != last_from_x or shoot_to_y != last_from_y):
+            return False
+        # Invalid rule
+        if abs(shoot_from_x - shoot_to_x) != abs(shoot_from_y - shoot_to_y) and shoot_to_x != shoot_from_x and shoot_to_y != shoot_from_y:
+            return False
+        # Shoot itself:
+        if shoot_from_x == shoot_to_x and shoot_from_y == shoot_to_y:
             return False
         # Check block
-        if self.isBlocked(move, state):
+        if self.isBlockedShooting(move, state):
             return False
         return True
 
@@ -70,6 +97,131 @@ class Player:
         state[from_x][from_y] = '.'
         state[to_x][to_y] = self.str
         state[shot_x][shot_y] = 'X'
+
+    def getAllValidMove(self, state):
+        # Move format ((from_x, from_y), (to_x, to_y), (shot_x, shot_y))
+        moveArr = []
+        placeArr = self.getAllValidPlaceQueen(state)
+        for place in placeArr:
+            moveArr = moveArr + self.getAllValidShootingFromPlace(place, state)
+        return moveArr
+
+    def getAllValidPlaceQueen(self, state):
+        result = []
+        for i in [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]:
+            for j in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]:
+                if state[i][j] == self.str:
+                    # Horizontal move
+                    m = i
+                    n = 0
+                    while n < 10:
+                        if self.isValidPlaceQueen([(i, j), (m, n)], state):
+                            result.append([(i, j), (m, n)])
+                        n = n + 1
+                    # Vertical move
+                    m = 0
+                    n = j
+                    while m < 10:
+                        if self.isValidPlaceQueen([(i, j), (m, n)], state):
+                            result.append([(i, j), (m, n)])
+                        m = m + 1
+                    # Top left
+                    m = i + 1
+                    n = j - 1
+                    while m < 10 and n > -1:
+                        if self.isValidPlaceQueen([(i, j), (m, n)], state):
+                            result.append([(i, j), (m, n)])
+                        m = m + 1
+                        n = n - 1
+                    # Top right
+                    m = i + 1
+                    n = j + 1
+                    while m < 10 and n < 10:
+                        if self.isValidPlaceQueen([(i, j), (m, n)], state):
+                            result.append([(i, j), (m, n)])
+                        m = m + 1
+                        n = n + 1
+                    # Bottom left
+                    m = i - 1
+                    n = j - 1
+                    while m > -1 and n > -1:
+                        if self.isValidPlaceQueen([(i, j), (m, n)], state):
+                            result.append([(i, j), (m, n)])
+                        m = m - 1
+                        n = n - 1
+                    # Bottom right:
+                    m = i - 1
+                    n = j + 1
+                    while m > -1 and n < 10:
+                        if self.isValidPlaceQueen([(i, j), (m, n)], state):
+                            result.append([(i, j), (m, n)])
+                        m = m - 1
+                        n = n + 1
+        return result
+
+    def getAllValidShootingFromPlace(self, place, state):
+        result = []
+        # Horizontal
+        m = place[1][0]
+        n = 0
+        while n < 10:
+            m_place = copy.deepcopy(place)
+            m_place.append((m, n))
+            if self.isValidShooting(m_place, state):
+                result.append(m_place)
+            n = n + 1
+        # Vertical
+        m = 0
+        n = place[1][1]
+        while m < 10:
+            m_place = copy.deepcopy(place)
+            m_place.append((m, n))
+            if self.isValidShooting(m_place, state):
+                result.append(m_place)
+            m = m + 1
+        # Top left
+        m = place[1][0] + 1
+        n = place[1][1] - 1
+        while m < 10 and n > -1:
+            m_place = copy.deepcopy(place)
+            m_place.append((m, n))
+            if self.isValidShooting(m_place, state):
+                result.append(m_place)
+            m = m + 1
+            n = n - 1
+        # Top right
+        m = place[1][0] + 1
+        n = place[1][1] + 1
+        while m < 10 and n < 10:
+            m_place = copy.deepcopy(place)
+            m_place.append((m, n))
+            if self.isValidShooting(m_place, state):
+                result.append(m_place)
+            m = m + 1
+            n = n + 1
+        # Bottom left
+        m = place[1][0] - 1
+        n = place[1][1] - 1
+        while m > -1 and n > -1:
+            m_place = copy.deepcopy(place)
+            m_place.append((m, n))
+            if self.isValidShooting(m_place, state):
+                result.append(m_place)
+            m = m - 1
+            n = n - 1
+        # Bottom right:
+        m = place[1][0] - 1
+        n = place[1][1] + 1
+        while m > -1 and n < 10:
+            m_place = copy.deepcopy(place)
+            m_place.append((m, n))
+            if self.isValidShooting(m_place, state):
+                result.append(m_place)
+            m = m - 1
+            n = n + 1
+        return result
+
+
 
     # # Evaluate a state
     # def evaluate(self, state):
@@ -93,12 +245,13 @@ class Player:
         return True
 
     def isBlocked(self, move, state):
+        return self.isBlockedPlaceQueen([move[0], move[1]], state) and self.isBlockedShooting(move, state)
+
+    def isBlockedPlaceQueen(self, move, state):
         from_x = move[0][0]
         from_y = move[0][1]
         to_x = move[1][0]
         to_y = move[1][1]
-        shot_x = move[2][0]
-        shot_y = move[2][1]
         # Check block when moving
         # Horizontal aligned
         if from_x == to_x:
@@ -114,11 +267,11 @@ class Player:
         elif from_y == to_y:
             if from_x < to_x:
                 for i in range(from_x + 1, to_x):
-                    if state[from_x][i] != '.':
+                    if state[i][from_y] != '.':
                         return True
             else:
                 for i in range(to_x + 1, from_x):
-                    if state[from_x][i] != '.':
+                    if state[i][from_y] != '.':
                         return True
         # Diagonally aligned
         elif abs(from_x - to_x) == abs(from_y - to_y):
@@ -158,64 +311,71 @@ class Player:
                         return True
                     i = i + 1
                     j = j - 1
+        return False
 
+    def isBlockedShooting(self, move, state):
+        shoot_from_x = move[1][0]
+        shoot_from_y = move[1][1]
+        shoot_to_x = move[2][0]
+        shoot_to_y = move[2][1]
+        last_from_x = move[0][0]
+        last_from_y = move[0][1]
         # Check block when shooting
         # Horizontal aligned
-        if to_x == shot_x:
-            if to_y < shot_y:
-                for i in range(to_y + 1, shot_y):
-                    if state[to_x][i] != '.':
+        if shoot_from_x == shoot_to_x:
+            if shoot_from_y < shoot_to_y:
+                for i in range(shoot_from_y + 1, shoot_to_y):
+                    if state[shoot_from_x][i] != '.' and (shoot_from_x != last_from_x or i != last_from_y):
                         return True
             else:
-                for i in range(shot_y + 1, to_y):
-                    if state[to_x][i] != '.':
+                for i in range(shoot_to_y + 1, shoot_from_y):
+                    if state[shoot_from_x][i] != '.' and (shoot_from_x != last_from_x or i != last_from_y):
                         return True
         # Vertical aligned
-        elif to_y == shot_y:
-            if to_x < shot_x:
-                for i in range(to_x + 1, shot_x):
-                    if state[to_x][i] != '.':
+        elif shoot_from_y == shoot_to_y:
+            if shoot_from_x < shoot_to_x:
+                for i in range(shoot_from_x + 1, shoot_to_x):
+                    if state[i][shoot_from_y] != '.' and (i != last_from_x or shoot_from_y != last_from_y):
                         return True
             else:
-                for i in range(shot_x + 1, to_x):
-                    if state[to_x][i] != '.':
+                for i in range(shoot_to_x + 1, shoot_from_x):
+                    if state[i][shoot_from_y] != '.' and (i != last_from_x or shoot_from_y != last_from_y):
                         return True
         # Diagonally aligned
-        elif abs(to_x - shot_x) == abs(to_y - shot_y):
+        elif abs(shoot_from_x - shoot_to_x) == abs(shoot_from_y - shoot_to_y):
             # Bottom right
-            if shot_x < to_x and shot_y > to_y:
-                i = to_x - 1
-                j = to_y + 1
-                while i > shot_x and j < shot_y:
-                    if state[i][j] != '.':
+            if shoot_to_x < shoot_from_x and shoot_to_y > shoot_from_y:
+                i = shoot_from_x - 1
+                j = shoot_from_y + 1
+                while i > shoot_to_x and j < shoot_to_y:
+                    if state[i][j] != '.' and (i != last_from_x or j != last_from_y):
                         return True
                     i = i - 1
                     j = j + 1
             # Top right
-            elif shot_x > to_x and shot_y > to_y:
-                i = to_x + 1
-                j = to_y + 1
-                while i < shot_x and j < shot_y:
-                    if state[i][j] != '.':
+            elif shoot_to_x > shoot_from_x and shoot_to_y > shoot_from_y:
+                i = shoot_from_x + 1
+                j = shoot_from_y + 1
+                while i < shoot_to_x and j < shoot_to_y:
+                    if state[i][j] != '.' and (i != last_from_x or j != last_from_y):
                         return True
                     i = i + 1
                     j = j + 1
             # Bottom left
-            elif shot_x < to_x and shot_y < to_y:
-                i = to_x - 1
-                j = to_y - 1
-                while i > shot_x and j > shot_y:
-                    if state[i][j] != '.':
+            elif shoot_to_x < shoot_from_x and shoot_to_y < shoot_from_y:
+                i = shoot_from_x - 1
+                j = shoot_from_y - 1
+                while i > shoot_to_x and j > shoot_to_y:
+                    if state[i][j] != '.' and (i != last_from_x or j != last_from_y):
                         return True
                     i = i - 1
                     j = j - 1
             # Top left
-            elif shot_x > to_x and shot_y < to_y:
-                i = to_x + 1
-                j = to_y - 1
-                while i < shot_x and j > shot_y:
-                    if state[i][j] != '.':
+            elif shoot_to_x > shoot_from_x and shoot_to_y < shoot_from_y:
+                i = shoot_from_x + 1
+                j = shoot_from_y - 1
+                while i < shoot_to_x and j > shoot_to_y:
+                    if state[i][j] != '.' and (i != last_from_x or j != last_from_y):
                         return True
                     i = i + 1
                     j = j - 1
-        return False
