@@ -27,9 +27,15 @@ class Player:
         result = None
         validMoves = self.getAllValidMove(state)
         if len(validMoves) != 0:
-            # result = validMoves[random.randint(0, len(validMoves) - 1)]
-            # # result = validMoves[0]
-            result = max(validMoves[:20], key=lambda x: self.evaluate(x, state))
+            bestMove = validMoves[random.randint(0, len(validMoves) - 1)]
+            bestValue = self.evaluate(bestMove, state)
+            for i in range(0, 15):
+                move = validMoves[random.randint(0, len(validMoves) - 1)]
+                value = self.evaluate(move, state)
+                if value > bestValue:
+                    bestMove = move
+                    bestValue = value
+            result = bestMove
         return result
 
     def board_copy(self, board):
