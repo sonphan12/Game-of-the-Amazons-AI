@@ -27,8 +27,9 @@ class Player:
         result = None
         validMoves = self.getAllValidMove(state)
         if len(validMoves) != 0:
-            result = validMoves[random.randint(0, len(validMoves) - 1)]
-            # result = validMoves[0]
+            # result = validMoves[random.randint(0, len(validMoves) - 1)]
+            # # result = validMoves[0]
+            result = max(validMoves[:20], key=lambda x: self.evaluate(x, state))
         return result
 
     def board_copy(self, board):
@@ -103,7 +104,7 @@ class Player:
         moveArr = []
         placeArr = self.getAllValidPlaceQueen(state)
         for place in placeArr:
-            moveArr = moveArr + self.getAllValidShootingFromPlace(place, state)
+            moveArr += self.getAllValidShootingFromPlace(place, state)
         return moveArr
 
     def getAllValidPlaceQueen(self, state):
@@ -117,46 +118,46 @@ class Player:
                     while n < 10:
                         if self.isValidPlaceQueen([(i, j), (m, n)], state):
                             result.append([(i, j), (m, n)])
-                        n = n + 1
+                        n += 1
                     # Vertical move
                     m = 0
                     n = j
                     while m < 10:
                         if self.isValidPlaceQueen([(i, j), (m, n)], state):
                             result.append([(i, j), (m, n)])
-                        m = m + 1
+                        m += 1
                     # Top left
                     m = i + 1
                     n = j - 1
                     while m < 10 and n > -1:
                         if self.isValidPlaceQueen([(i, j), (m, n)], state):
                             result.append([(i, j), (m, n)])
-                        m = m + 1
-                        n = n - 1
+                        m += 1
+                        n -= 1
                     # Top right
                     m = i + 1
                     n = j + 1
                     while m < 10 and n < 10:
                         if self.isValidPlaceQueen([(i, j), (m, n)], state):
                             result.append([(i, j), (m, n)])
-                        m = m + 1
-                        n = n + 1
+                        m += 1
+                        n += 1
                     # Bottom left
                     m = i - 1
                     n = j - 1
                     while m > -1 and n > -1:
                         if self.isValidPlaceQueen([(i, j), (m, n)], state):
                             result.append([(i, j), (m, n)])
-                        m = m - 1
-                        n = n - 1
+                        m -= 1
+                        n -= 1
                     # Bottom right:
                     m = i - 1
                     n = j + 1
                     while m > -1 and n < 10:
                         if self.isValidPlaceQueen([(i, j), (m, n)], state):
                             result.append([(i, j), (m, n)])
-                        m = m - 1
-                        n = n + 1
+                        m -= 1
+                        n += 1
         return result
 
     def getAllValidShootingFromPlace(self, place, state):
@@ -169,7 +170,7 @@ class Player:
             m_place.append((m, n))
             if self.isValidShooting(m_place, state):
                 result.append(m_place)
-            n = n + 1
+            n += 1
         # Vertical
         m = 0
         n = place[1][1]
@@ -178,7 +179,7 @@ class Player:
             m_place.append((m, n))
             if self.isValidShooting(m_place, state):
                 result.append(m_place)
-            m = m + 1
+            m += 1
         # Top left
         m = place[1][0] + 1
         n = place[1][1] - 1
@@ -187,8 +188,8 @@ class Player:
             m_place.append((m, n))
             if self.isValidShooting(m_place, state):
                 result.append(m_place)
-            m = m + 1
-            n = n - 1
+            m += 1
+            n -= 1
         # Top right
         m = place[1][0] + 1
         n = place[1][1] + 1
@@ -197,8 +198,8 @@ class Player:
             m_place.append((m, n))
             if self.isValidShooting(m_place, state):
                 result.append(m_place)
-            m = m + 1
-            n = n + 1
+            m += 1
+            n += 1
         # Bottom left
         m = place[1][0] - 1
         n = place[1][1] - 1
@@ -207,8 +208,8 @@ class Player:
             m_place.append((m, n))
             if self.isValidShooting(m_place, state):
                 result.append(m_place)
-            m = m - 1
-            n = n - 1
+            m -= 1
+            n -= 1
         # Bottom right:
         m = place[1][0] - 1
         n = place[1][1] + 1
@@ -217,25 +218,25 @@ class Player:
             m_place.append((m, n))
             if self.isValidShooting(m_place, state):
                 result.append(m_place)
-            m = m - 1
-            n = n + 1
+            m -= 1
+            n += 1
         return result
 
 
 
-    # # Evaluate a state
-    # def evaluate(self, state):
-    #     block_dict = {}
-    #     queen_dict = {}
-    #     evaluate_value = 0
-    #     for i in [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]:
-    #         for j in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]:
-    #             if state[i][j] == 'X':
-    #                 block_dict[(i, j)] = state[i][j]
-    #             elif state[i][j] != '.':
-    #                 queen_dict[(i, j)] = state[i][j]
-    #
-    #     for queen in queen_dict:
+    # Evaluate a move (without changing the state)
+    def evaluate(self, move, state):
+        lState = copy.deepcopy(state)
+        self.move(move, lState)
+        selfPossibleMoves = self.getAllValidMove(lState)
+        opponent = ''
+        if self.str == 'w':
+            opponent = Player('b')
+        else:
+            opponent = Player('w')
+        opponentPossibleMoves = opponent.getAllValidMove(lState)
+
+        return len(selfPossibleMoves) - len(opponentPossibleMoves)
 
     # Block each other?
     def isBlockEachOther(self, place1, place2):
@@ -282,8 +283,8 @@ class Player:
                 while i > to_x and j < to_y:
                     if state[i][j] != '.':
                         return True
-                    i = i - 1
-                    j = j + 1
+                    i -= 1
+                    j += 1
             # Top right
             elif to_x > from_x and to_y > from_y:
                 i = from_x + 1
@@ -291,8 +292,8 @@ class Player:
                 while i < to_x and j < to_y:
                     if state[i][j] != '.':
                         return True
-                    i = i + 1
-                    j = j + 1
+                    i += 1
+                    j += 1
             # Bottom left
             elif to_x < from_x and to_y < from_y:
                 i = from_x - 1
@@ -300,8 +301,8 @@ class Player:
                 while i > to_x and j > to_y:
                     if state[i][j] != '.':
                         return True
-                    i = i - 1
-                    j = j - 1
+                    i -= 1
+                    j -= 1
             # Top left
             elif to_x > from_x and to_y < from_y:
                 i = from_x + 1
@@ -309,8 +310,8 @@ class Player:
                 while i < to_x and j > to_y:
                     if state[i][j] != '.':
                         return True
-                    i = i + 1
-                    j = j - 1
+                    i += 1
+                    j -= 1
         return False
 
     def isBlockedShooting(self, move, state):
@@ -350,8 +351,8 @@ class Player:
                 while i > shoot_to_x and j < shoot_to_y:
                     if state[i][j] != '.' and (i != last_from_x or j != last_from_y):
                         return True
-                    i = i - 1
-                    j = j + 1
+                    i -= 1
+                    j += 1
             # Top right
             elif shoot_to_x > shoot_from_x and shoot_to_y > shoot_from_y:
                 i = shoot_from_x + 1
@@ -359,8 +360,8 @@ class Player:
                 while i < shoot_to_x and j < shoot_to_y:
                     if state[i][j] != '.' and (i != last_from_x or j != last_from_y):
                         return True
-                    i = i + 1
-                    j = j + 1
+                    i += 1
+                    j += 1
             # Bottom left
             elif shoot_to_x < shoot_from_x and shoot_to_y < shoot_from_y:
                 i = shoot_from_x - 1
@@ -368,8 +369,8 @@ class Player:
                 while i > shoot_to_x and j > shoot_to_y:
                     if state[i][j] != '.' and (i != last_from_x or j != last_from_y):
                         return True
-                    i = i - 1
-                    j = j - 1
+                    i -= 1
+                    j -= 1
             # Top left
             elif shoot_to_x > shoot_from_x and shoot_to_y < shoot_from_y:
                 i = shoot_from_x + 1
@@ -377,5 +378,5 @@ class Player:
                 while i < shoot_to_x and j > shoot_to_y:
                     if state[i][j] != '.' and (i != last_from_x or j != last_from_y):
                         return True
-                    i = i + 1
-                    j = j - 1
+                    i += 1
+                    j -= 1

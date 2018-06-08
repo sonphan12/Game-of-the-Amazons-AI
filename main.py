@@ -97,9 +97,9 @@ def play(student_a, student_b, start_state=Initial_Board):
 
         print("The move is : ", move, end=" ")
         print(" (in %.2f ms)" % (elapse * 1000), end=" ")
-        if elapse > 3.0:
-            print(" ** took more than three second!!", end=" ")
-            break
+        # if elapse > 3.0:
+        #     print(" ** took more than three second!!", end=" ")
+        #     break
         print()
         # check_move
         state = doit(move, state)
@@ -119,4 +119,4 @@ def play(student_a, student_b, start_state=Initial_Board):
         print("The Winner is:", student_a, 'white')
 
 
-play("amazons", "amazons")
+play("amazons_best_local", "amazons_random")
