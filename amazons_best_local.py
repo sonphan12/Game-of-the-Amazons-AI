@@ -1,5 +1,6 @@
 import random
 import copy
+import time
 
 
 # ======================== Class Player =======================================
@@ -29,12 +30,15 @@ class Player:
         if len(validMoves) != 0:
             bestMove = validMoves[random.randint(0, len(validMoves) - 1)]
             bestValue = self.evaluate(bestMove, state)
-            for i in range(0, 15):
+            start = time.time()
+            for i in range(0, len(validMoves)):
                 move = validMoves[random.randint(0, len(validMoves) - 1)]
                 value = self.evaluate(move, state)
                 if value > bestValue:
                     bestMove = move
                     bestValue = value
+                if time.time() - start >= 2.5:
+                    return bestMove
             result = bestMove
         return result
 

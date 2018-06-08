@@ -1,7 +1,6 @@
 import imp
 import time
 
-
 # ======================================================================
 
 
@@ -68,6 +67,8 @@ Initial_Board = [
 #     0 1 2 3 4 5 6 7 8 9
 # ======================================================================
 
+k = 0
+
 
 def play(student_a, student_b, start_state=Initial_Board):
     player_a = imp.load_source(student_a, student_a + ".py")
@@ -117,6 +118,11 @@ def play(student_a, student_b, start_state=Initial_Board):
         print("The Winner is:", student_b, 'black')
     else:
         print("The Winner is:", student_a, 'white')
+        global k
+        k += 1
 
 
-play("amazons_best_local", "amazons_random")
+for i in range(0, 20):
+    play("amazons_best_local", "amazons_random")
+
+print("Amazon_best_local defeats amazons_random " + str(k) + " times")
